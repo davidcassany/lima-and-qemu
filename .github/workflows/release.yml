@@ -17,7 +17,12 @@ env:
 
 jobs:
   release:
-    runs-on: macos-10.15
+    strategy:
+      matrix:
+       os:
+       - macos-10.15
+       - ubuntu-latest 
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
     - uses: actions/setup-go@v2
@@ -32,7 +37,8 @@ jobs:
       run: make -C src/lima
     - name: Install
       run: sudo make -C src/lima install
-    - name: Install dependencies
+    - name: Install MacOS dependencies
+      if: startsWith(matrix.os, 'macos')
       # QEMU:      required by Lima itself
       # bash:      required by test-example.sh (OS version of bash is too old)
       # coreutils: required by test-example.sh for the "timeout" command
@@ -40,13 +46,38 @@ jobs:
         brew update
         brew install qemu bash coreutils
         brew upgrade
+    - name: Install Ubuntu dependencies
+      if: startsWith(matrix.os, 'ubuntu-latest')
+      # QEMU:      required by Lima itself
+      run: |
+        sudo apt-get update
+        sudo apt-get install qemu-kvm
     - name: Create lima-and-qemu tarball
       run: |
         ./src/lima/hack/lima-and-qemu.pl
-        sha512sum src/lima/lima-and-qemu.tar.gz > src/lima/lima-and-qemu.tar.gz.sha512sum
+        platform=""
+        case "${{ matrix.os }}" in
+          macos-*)
+            platform="darwin"
+            ;;
+          ubuntu-*)
+            platform="linux"
+            ;;
+        esac
+        mv src/lima/lima-and-qemu.tar.gz src/lima/lima-and-qemu.${platform}.tar.gz
+        sha512sum src/lima/lima-and-qemu.${platform}.tar.gz > src/lima/lima-and-qemu.${platform}.tar.gz.sha512sum
     - name: "Create release"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         tag="${GITHUB_REF##*/}"
-        hub release create -a src/lima/lima-and-qemu.tar.gz -a src/lima/lima-and-qemu.tar.gz.sha512sum -F <(echo ${tag}) --draft "${tag}"
+        platform=""
+        case "${{ matrix.os }}" in
+          macos-*)
+            platform="darwin"
+            ;;
+          ubuntu-*)
+            platform="linux"
+            ;;
+        esac
+        hub release create -a src/lima/lima-and-qemu.${platform}.tar.gz -a src/lima/lima-and-qemu.${platform}.tar.gz.sha512sum -F <(echo ${tag}) --draft "${tag}"
