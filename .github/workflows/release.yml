@@ -5,6 +5,12 @@ on:
     tags:
     - 'v*'
     - 'test-v*'
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Why?'
+        required: true
+        default: 'Testing a new release'
 
 env:
   GO111MODULE: on
