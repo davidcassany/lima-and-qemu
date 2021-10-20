@@ -31,6 +31,9 @@ set -e
 appDir=$1
 dist="lima-and-qemu"
 
+# Include ssh client (lima dependency)
+cp $(which ssh) "${appDir}/bin"
+
 # Inspired on linuxdeployqt https://github.com/probonopd/linuxdeployqt/blob/master/tools/linuxdeployqt/excludelist.h
 # Linuxdeployqt is a tool created by probonopd, the AppImage creator
 excludeLibs=" libz.so.1 "
@@ -46,15 +49,17 @@ excludeLibs+="libresolv.so.2 "
 excludeLibs+="libdl.so.2 "
 excludeLibs+="librt.so.1 "
 excludeLibs+="libuuid.so.1 "
+excludeLibs+="libdl.so.2 "
 
 firmwareOfInterest=" bios-256k.bin edk2-x86_64-code.fd efi-virtio.rom kvmvapic.bin vgabios-virtio.bin "
-executablesOfInterest=" qemu-system-x86_64 qemu-img limactl "
+executablesOfInterest=" qemu-system-x86_64 qemu-img limactl ssh"
 
 mkdir -p "${appDir}/lib"
 
-linkedLibs=$(ldd "${appDir}/bin/qemu-system-x86_64" | grep " => /" | cut -d" " -f3)
-linkedLibs+=$(ldd "${appDir}/bin/qemu-img" | grep " => /" | cut -d" " -f3)
-for lib in $(echo ${linkedLibs} | sort | uniq ); do
+linkedLibs=$(ldd "${appDir}/bin/qemu-system-x86_64" | grep " => /" | cut -d" " -f3)$'\n'
+linkedLibs+=$(ldd "${appDir}/bin/qemu-img" | grep " => /" | cut -d" " -f3)$'\n'
+linkedLibs+=$(ldd "${appDir}/bin/ssh" | grep " => /" | cut -d" " -f3)
+for lib in $(echo "${linkedLibs}" | sort | uniq ); do
   if [[ "${excludeLibs}" =~ \ $(basename ${lib})\  ]]; then
     continue
   fi
@@ -80,5 +85,8 @@ keepListedFiles "${appDir}/share/qemu" "${firmwareOfInterest}"
 
 # keep only relevant executables
 keepListedFiles "${appDir}/bin" "${executablesOfInterest}"
+
+# Include ssh client into the tarball (lima dependency)
+cp $(which ssh) "${appDir}/bin"
 
 tar caf "${dist}.tar.gz" -C "${appDir}" .
