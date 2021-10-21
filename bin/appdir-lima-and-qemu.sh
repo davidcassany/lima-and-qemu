@@ -47,9 +47,6 @@ excludeLibs+="libdl.so.2 "
 excludeLibs+="librt.so.1 "
 excludeLibs+="libuuid.so.1 "
 excludeLibs+="libdl.so.2 "
-excludeLibs+="libgio-2.0.so.0 "
-excludelibs+="libselinux.so.1 " # libgio dependency
-excludeLibs+="libmount.so.1 "   # libgio dependency
 
 firmwareOfInterest=" bios-256k.bin edk2-x86_64-code.fd efi-virtio.rom kvmvapic.bin vgabios-virtio.bin "
 executablesOfInterest=" qemu-system-x86_64 qemu-img limactl "
