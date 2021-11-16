@@ -11,36 +11,13 @@ env:
 
 jobs:
   release:
-    runs-on: macos-10.15
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v2
-      with:
-        go-version: 1.16.x
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
-        submodules: recursive
-        persist-credentials: false
-    - name: Make
-      run: make -C src/lima
-    - name: Install
-      run: sudo make -C src/lima install
-    - name: Install dependencies
-      # QEMU:      required by Lima itself
-      # bash:      required by test-example.sh (OS version of bash is too old)
-      # coreutils: required by test-example.sh for the "timeout" command
-      run: |
-        brew update
-        brew install qemu bash coreutils
-        brew upgrade
-    - name: Create lima-and-qemu tarball
-      run: |
-        ./src/lima/hack/lima-and-qemu.pl
-        sha512sum src/lima/lima-and-qemu.tar.gz > src/lima/lima-and-qemu.tar.gz.sha512sum
-    - name: "Create release"
+    - name: Trigger OBS services
+      uses: distributhor/workflow-webhook@v2
+      if: ${{ startsWith(matrix.os, 'ubuntu-') && github.ref_name == 'main' }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        tag="${GITHUB_REF##*/}"
-        hub release create -a src/lima/lima-and-qemu.tar.gz -a src/lima/lima-and-qemu.tar.gz.sha512sum -F <(echo ${tag}) --draft "${tag}"
+        webhook_type: 'form-urlencoded'
+        webhook_url: ${{ secrets.OBS_WEBHOOK_URL }}
+        webhook_secret: ${{ secrets.OBS_WEBHOOK_TOKEN }}
+ 
