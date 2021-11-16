@@ -5,6 +5,12 @@ on:
     tags:
     - 'v*'
     - 'test-v*'
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Why?'
+        required: true
+        default: 'Testing a new release'
 
 env:
   GO111MODULE: on
@@ -15,7 +21,6 @@ jobs:
     steps:
     - name: Trigger OBS services
       uses: distributhor/workflow-webhook@v2
-      if: ${{ startsWith(matrix.os, 'ubuntu-') && github.ref_name == 'main' }}
       env:
         webhook_type: 'form-urlencoded'
         webhook_url: ${{ secrets.OBS_WEBHOOK_URL }}
